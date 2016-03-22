@@ -16,6 +16,45 @@ using std::vector;
 
 IrrlichtDevice* device = 0;
 
+/*
+To receive events like mouse and keyboard input, or GUI events like "the OK
+button has been clicked", we need an object which is derived from the
+irr::IEventReceiver object. There is only one method to override:
+irr::IEventReceiver::OnEvent(). This method will be called by the engine once
+when an event happens. What we really want to know is whether a key is being
+held down, and so we will remember the current state of each key.
+*/
+class MyEventReceiver : public IEventReceiver
+{
+public:
+	// This is the one method that we have to implement
+	virtual bool OnEvent(const SEvent& event)
+	{
+		// Remember whether each key is down or up
+		if (event.EventType == irr::EET_KEY_INPUT_EVENT)
+			KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
+		return false;
+	}
+
+	// This is used to check whether a key is being held down
+	virtual bool IsKeyDown(EKEY_CODE keyCode) const
+	{
+		return KeyIsDown[keyCode];
+	}
+
+	MyEventReceiver()
+	{
+		for (u32 i = 0; i<KEY_KEY_CODES_COUNT; ++i)
+			KeyIsDown[i] = false;
+	}
+
+private:
+	// We use this array to store the current state of each key
+	bool KeyIsDown[KEY_KEY_CODES_COUNT];
+};
+
+
+
 class MyShaderCallBack : public video::IShaderConstantSetCallBack
 {
 public:
@@ -133,8 +172,11 @@ vector<Node> GenerateNodes() {
 }
 
 int main(void) {
-	
-	device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(640, 480), 32, false, false, false, 0);
+
+	// create device
+	MyEventReceiver receiver;
+
+	device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(640, 480), 32, false, false, false, &receiver);
 	if (!device) return 1;
 
 	device->setWindowCaption(L"Path Planning");
@@ -220,12 +262,45 @@ int main(void) {
 
 	int lastFPS = -1;
 
+	// In order to do framerate independent movement, we have to know
+	// how long it was since the last frame
+	u32 then = device->getTimer()->getTime();
+
+	// This is the movemen speed in units per second.
+	const f32 MOVEMENT_SPEED = 5.f;
+
 	while (device->run())
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, video::SColor(255, 0, 0, 0));
 			smgr->drawAll();
 			driver->endScene();
+
+			// Work out a frame delta time.
+			const u32 now = device->getTimer()->getTime();
+			const f32 frameDeltaTime = (f32)(now - then) / 1000.f; // Time in seconds
+			then = now;
+
+			/* Check if keys W, S, A or D are being held down, and move the
+			sphere node around respectively. */
+			vector3df camPosition = cam->getPosition();
+
+			if (receiver.IsKeyDown(KEY_KEY_W))
+				camPosition.Y += MOVEMENT_SPEED * frameDeltaTime;
+			else if (receiver.IsKeyDown(KEY_KEY_S))
+				camPosition.Y -= MOVEMENT_SPEED * frameDeltaTime;
+
+			if (receiver.IsKeyDown(KEY_KEY_A))
+				camPosition.X += MOVEMENT_SPEED * frameDeltaTime;
+			else if (receiver.IsKeyDown(KEY_KEY_D))
+				camPosition.X -= MOVEMENT_SPEED * frameDeltaTime;
+
+			if (receiver.IsKeyDown(KEY_KEY_E))
+				camPosition.Z -= MOVEMENT_SPEED * frameDeltaTime;
+			else if (receiver.IsKeyDown(KEY_KEY_Q))
+				camPosition.Z += MOVEMENT_SPEED * frameDeltaTime;
+
+			cam->setPosition(camPosition);
 
 			int fps = driver->getFPS();
 
