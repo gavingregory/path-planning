@@ -114,12 +114,13 @@ struct Edge {
 
 struct Node {
 	vector3df position;
+	SColor color;
 	vector<Edge> edges;
 	u32 f;
 	u32 g;
 	u32 h;
 	void reset() { f = g = h = 0; }
-	Node(vector3df pos) : f(0), g(0), h(0), position(pos) {};
+	Node(vector3df pos, SColor color) : f(0), g(0), h(0), position(pos), color(color) {};
 };
 
 vector<Node*> GenerateNodes() {
@@ -127,66 +128,66 @@ vector<Node*> GenerateNodes() {
 	vector<Node*> nodes;
 
 	// add nodes to vector
-	nodes.push_back(new Node(vector3df(0, 1, 3 * o)          ));
-	nodes.push_back(new Node(vector3df(0, 1, -3 * o)         ));
-	nodes.push_back(new Node(vector3df(0, -1, 3* o)          ));
-	nodes.push_back(new Node(vector3df(0, -1, -3* o)         ));
-	nodes.push_back(new Node(vector3df(1, 3* o, 0)           ));
-	nodes.push_back(new Node(vector3df(1, -3* o, 0)          ));
-	nodes.push_back(new Node(vector3df(-1, 3* o, 0)          ));
-	nodes.push_back(new Node(vector3df(-1, -3* o, 0)         ));
-	nodes.push_back(new Node(vector3df(3* o, 0, 1)           ));
-	nodes.push_back(new Node(vector3df(3* o, 0, -1)          ));
-	nodes.push_back(new Node(vector3df(-3* o, 0, 1)          ));
-	nodes.push_back(new Node(vector3df(-3* o, 0, -1)         ));
-	nodes.push_back(new Node(vector3df(2, (1 + 2* o), o)     ));
-	nodes.push_back(new Node(vector3df(2, (1 + 2* o), -o)    ));
-	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), o)    ));
-	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), -o)   ));
-	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), o)    ));
-	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), -o)   ));
-	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), o)   ));
-	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), -o)  ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), o, 2)     ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), o, -2)    ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), -o, 2)    ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), -o, -2)   ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, 2)    ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, -2)   ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, 2)   ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, -2)  ));
-	nodes.push_back(new Node(vector3df(o, 2, (1 + 2* o))     ));
-	nodes.push_back(new Node(vector3df(o, 2, -(1 + 2* o))    ));
-	nodes.push_back(new Node(vector3df(o, -2, (1 + 2* o))    ));
-	nodes.push_back(new Node(vector3df(o, -2, -(1 + 2* o))   ));
-	nodes.push_back(new Node(vector3df(-o, 2, (1 + 2* o))    ));
-	nodes.push_back(new Node(vector3df(-o, 2, -(1 + 2* o))   ));
-	nodes.push_back(new Node(vector3df(-o, -2, (1 + 2* o))   ));
-	nodes.push_back(new Node(vector3df(-o, -2, -(1 + 2* o))  ));
-	nodes.push_back(new Node(vector3df(1, (2 + o), 2* o)     ));
-	nodes.push_back(new Node(vector3df(1, (2 + o), -2* o)    ));
-	nodes.push_back(new Node(vector3df(1, -(2 + o), 2* o)    ));
-	nodes.push_back(new Node(vector3df(1, -(2 + o), -2* o)   ));
-	nodes.push_back(new Node(vector3df(-1, (2 + o), 2* o)    ));
-	nodes.push_back(new Node(vector3df(-1, (2 + o), -2* o)   ));
-	nodes.push_back(new Node(vector3df(-1, -(2 + o), 2* o)   ));
-	nodes.push_back(new Node(vector3df(-1, -(2 + o), -2* o)  ));
-	nodes.push_back(new Node(vector3df((2 + o), 2* o, 1)     ));
-	nodes.push_back(new Node(vector3df((2 + o), 2* o, -1)    ));
-	nodes.push_back(new Node(vector3df((2 + o), -2* o, 1)    ));
-	nodes.push_back(new Node(vector3df((2 + o), -2* o, -1)   ));
-	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, 1)    ));
-	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, -1)   ));
-	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, 1)   ));
-	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, -1)  ));
-	nodes.push_back(new Node(vector3df(2* o, 1, (2 + o))     ));
-	nodes.push_back(new Node(vector3df(2* o, 1, -(2 + o))    ));
-	nodes.push_back(new Node(vector3df(2* o, -1, (2 + o))    ));
-	nodes.push_back(new Node(vector3df(2* o, -1, -(2 + o))   ));
-	nodes.push_back(new Node(vector3df(-2 * o, 1, (2 + o))   ));
-	nodes.push_back(new Node(vector3df(-2 * o, 1, -(2 + o))  ));
-	nodes.push_back(new Node(vector3df(-2 * o, -1, (2 + o))  ));
-	nodes.push_back(new Node(vector3df(-2 * o, -1, -(2 + o)) ));
+	nodes.push_back(new Node(vector3df(0, 1, 3 * o)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(0, 1, -3 * o)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(0, -1, 3* o)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(0, -1, -3* o)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, 3* o, 0)           , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, -3* o, 0)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, 3* o, 0)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, -3* o, 0)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(3* o, 0, 1)           , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(3* o, 0, -1)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-3* o, 0, 1)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-3* o, 0, -1)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2, (1 + 2* o), o)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2, (1 + 2* o), -o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), -o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), -o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), -o)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), o, 2)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), o, -2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), -o, 2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), -o, -2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, 2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, -2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, 2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, -2)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(o, 2, (1 + 2* o))     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, (2 + o), -2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, -(2 + o), 2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(1, -(2 + o), -2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, (2 + o), 2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, (2 + o), -2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, -(2 + o), 2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-1, -(2 + o), -2* o)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((2 + o), 2* o, 1)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((2 + o), 2* o, -1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((2 + o), -2* o, 1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df((2 + o), -2* o, -1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, 1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, -1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, 1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, -1)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2* o, 1, (2 + o))     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2* o, 1, -(2 + o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0) ));
 
 	/**
 	 * Create edges between nodes. Each node has 3 shortest edges, so the below
@@ -308,8 +309,10 @@ int main(void) {
 	//
 	//u16 pIndexBuffer[2] = { 0,1 };
 
-	IVertexBuffer* pVertexBuffer = new CVertexBuffer(EVT_STANDARD);
-	IIndexBuffer* pIndexBuffer = new CIndexBuffer(EIT_16BIT);
+	IVertexBuffer* lineVertexBuffer = new CVertexBuffer(EVT_STANDARD);
+	IIndexBuffer* lineIndexBuffer = new CIndexBuffer(EIT_16BIT);
+	SMaterial lineMaterial = SMaterial();
+	lineMaterial.Thickness = 3;
 
 	for (u32 i = 0; i < nodes.size(); ++i) {
 		std::string name();
@@ -322,18 +325,18 @@ int main(void) {
 			std::to_wstring(i).c_str(),
 			video::SColor(255, 255, 255, 255), node);
 		
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), SColor(), vector2df()));
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[1].to->position, vector3df(), SColor(), vector2df()));
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
-		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[2].to->position, vector3df(), SColor(), vector2df()));
-		pIndexBuffer->push_back((i * 6) + 0);
-		pIndexBuffer->push_back((i * 6) + 1);
-		pIndexBuffer->push_back((i * 6) + 2);
-		pIndexBuffer->push_back((i * 6) + 3);
-		pIndexBuffer->push_back((i * 6) + 4);
-		pIndexBuffer->push_back((i * 6) + 5);
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(255,0, 255,0), vector2df()));
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), nodes[i]->edges[0].to->color, vector2df()));
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), nodes[i]->color, vector2df()));
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[1].to->position, vector3df(), nodes[i]->edges[1].to->color, vector2df()));
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), nodes[i]->color, vector2df()));
+		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[2].to->position, vector3df(), nodes[i]->edges[2].to->color, vector2df()));
+		lineIndexBuffer->push_back((i * 6) + 0);
+		lineIndexBuffer->push_back((i * 6) + 1);
+		lineIndexBuffer->push_back((i * 6) + 2);
+		lineIndexBuffer->push_back((i * 6) + 3);
+		lineIndexBuffer->push_back((i * 6) + 4);
+		lineIndexBuffer->push_back((i * 6) + 5);
 	}
 
 	// add a nice skybox
@@ -373,13 +376,13 @@ int main(void) {
 
 			smgr->drawAll();
 
-			driver->setMaterial(SMaterial());
+			driver->setMaterial(lineMaterial);
 
 			driver->setTransform(ETS_WORLD, matrix4());
 			// draw lines
 			smgr->getVideoDriver()->drawVertexPrimitiveList(
-				pVertexBuffer->pointer(), pVertexBuffer->size(),
-				pIndexBuffer->pointer(), pVertexBuffer->size() / 2,
+				lineVertexBuffer->pointer(), lineVertexBuffer->size(),
+				lineIndexBuffer->pointer(), lineVertexBuffer->size() / 2,
 				EVT_STANDARD,
 				EPT_LINES,
 				EIT_16BIT);
