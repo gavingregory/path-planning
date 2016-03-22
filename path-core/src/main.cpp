@@ -11,6 +11,8 @@ using namespace io;
 using namespace gui;
 
 using std::vector;
+using std::cout;
+using std::endl;
 
 #pragma comment(lib, "Irrlicht.lib")
 
@@ -100,75 +102,147 @@ public:
 	}
 };
 
-struct Node {
-	vector3df position;
+struct Node;
+
+struct Edge {
+	f32 weight;
+	Node* from;
+	Node* to;
+	Edge() : from(nullptr), to(nullptr), weight(0.0f) {}
+	Edge(f32 weight, Node* from, Node* to) : from(from), to(to), weight(weight) {}
 };
 
-vector<Node> GenerateNodes() {
-	float o = (1.0f + sqrt(5.0f)) / 2.0f;
-	vector<Node> nodes;
+struct Node {
+	vector3df position;
+	vector<Edge> edges;
+	u32 f;
+	u32 g;
+	u32 h;
+	void reset() { f = g = h = 0; }
+	Node(vector3df pos) : f(0), g(0), h(0), position(pos) {};
+};
 
-	nodes.push_back(Node{ vector3df(0, 1, -3 * o) });
-	nodes.push_back(Node{vector3df(0, -1, 3* o) });
-	nodes.push_back(Node{vector3df(0, -1, -3* o) });
-	nodes.push_back(Node{vector3df(1, 3* o, 0) });
-	nodes.push_back(Node{vector3df(1, -3* o, 0) });
-	nodes.push_back(Node{vector3df(-1, 3* o, 0) });
-	nodes.push_back(Node{vector3df(-1, -3* o, 0) });
-	nodes.push_back(Node{vector3df(3* o, 0, 1) });
-	nodes.push_back(Node{vector3df(3* o, 0, -1) });
-	nodes.push_back(Node{vector3df(-3* o, 0, 1) });
-	nodes.push_back(Node{vector3df(-3* o, 0, -1) });
-	nodes.push_back(Node{vector3df(2, (1 + 2* o), o) });
-	nodes.push_back(Node{vector3df(2, (1 + 2* o), -o) });
-	nodes.push_back(Node{vector3df(2, -(1 + 2* o), o) });
-	nodes.push_back(Node{vector3df(2, -(1 + 2* o), -o) });
-	nodes.push_back(Node{vector3df(-2, (1 + 2* o), o) });
-	nodes.push_back(Node{vector3df(-2, (1 + 2* o), -o) });
-	nodes.push_back(Node{vector3df(-2, -(1 + 2* o), o) });
-	nodes.push_back(Node{vector3df(-2, -(1 + 2* o), -o) });
-	nodes.push_back(Node{vector3df((1 + 2* o), o, 2) });
-	nodes.push_back(Node{vector3df((1 + 2* o), o, -2) });
-	nodes.push_back(Node{vector3df((1 + 2* o), -o, 2) });
-	nodes.push_back(Node{vector3df((1 + 2* o), -o, -2) });
-	nodes.push_back(Node{vector3df(-(1 + 2* o), o, 2) });
-	nodes.push_back(Node{vector3df(-(1 + 2* o), o, -2) });
-	nodes.push_back(Node{vector3df(-(1 + 2* o), -o, 2) });
-	nodes.push_back(Node{vector3df(-(1 + 2* o), -o, -2) });
-	nodes.push_back(Node{vector3df(o, 2, (1 + 2* o)) });
-	nodes.push_back(Node{vector3df(o, 2, -(1 + 2* o)) });
-	nodes.push_back(Node{vector3df(o, -2, (1 + 2* o)) });
-	nodes.push_back(Node{vector3df(o, -2, -(1 + 2* o)) });
-	nodes.push_back(Node{vector3df(-o, 2, (1 + 2* o)) });
-	nodes.push_back(Node{vector3df(-o, 2, -(1 + 2* o)) });
-	nodes.push_back(Node{vector3df(-o, -2, (1 + 2* o)) });
-	nodes.push_back(Node{vector3df(-o, -2, -(1 + 2* o)) });
-	nodes.push_back(Node{vector3df(1, (2 + o), 2* o) });
-	nodes.push_back(Node{vector3df(1, (2 + o), -2* o) });
-	nodes.push_back(Node{vector3df(1, -(2 + o), 2* o) });
-	nodes.push_back(Node{vector3df(1, -(2 + o), -2* o) });
-	nodes.push_back(Node{vector3df(-1, (2 + o), 2* o) });
-	nodes.push_back(Node{vector3df(-1, (2 + o), -2* o) });
-	nodes.push_back(Node{vector3df(-1, -(2 + o), 2* o) });
-	nodes.push_back(Node{vector3df(-1, -(2 + o), -2* o) });
-	nodes.push_back(Node{vector3df((2 + o), 2* o, 1) });
-	nodes.push_back(Node{vector3df((2 + o), 2* o, -1) });
-	nodes.push_back(Node{vector3df((2 + o), -2* o, 1) });
-	nodes.push_back(Node{vector3df((2 + o), -2* o, -1) });
-	nodes.push_back(Node{vector3df(-(2 + o), 2* o, 1) });
-	nodes.push_back(Node{vector3df(-(2 + o), 2* o, -1) });
-	nodes.push_back(Node{vector3df(-(2 + o), -2* o, 1) });
-	nodes.push_back(Node{vector3df(-(2 + o), -2* o, -1) });
-	nodes.push_back(Node{vector3df(2* o, 1, (2 + o)) });
-	nodes.push_back(Node{vector3df(2* o, 1, -(2 + o)) });
-	nodes.push_back(Node{vector3df(2* o, -1, (2 + o)) });
-	nodes.push_back(Node{vector3df(2* o, -1, -(2 + o)) });
-	nodes.push_back(Node{ vector3df(-2 * o, 1, (2 + o)) });
-	nodes.push_back(Node{ vector3df(-2 * o, 1, -(2 + o)) });
-	nodes.push_back(Node{ vector3df(-2 * o, -1, (2 + o)) });
-	nodes.push_back(Node{ vector3df(-2 * o, -1, -(2 + o)) });
+vector<Node*> GenerateNodes() {
+	float o = (1.0f + sqrt(5.0f)) / 2.0f;
+	vector<Node*> nodes;
+
+	// add nodes to vector
+	nodes.push_back(new Node(vector3df(0, 1, -3 * o)         ));
+	nodes.push_back(new Node(vector3df(0, -1, 3* o)          ));
+	nodes.push_back(new Node(vector3df(0, -1, -3* o)         ));
+	nodes.push_back(new Node(vector3df(1, 3* o, 0)           ));
+	nodes.push_back(new Node(vector3df(1, -3* o, 0)          ));
+	nodes.push_back(new Node(vector3df(-1, 3* o, 0)          ));
+	nodes.push_back(new Node(vector3df(-1, -3* o, 0)         ));
+	nodes.push_back(new Node(vector3df(3* o, 0, 1)           ));
+	nodes.push_back(new Node(vector3df(3* o, 0, -1)          ));
+	nodes.push_back(new Node(vector3df(-3* o, 0, 1)          ));
+	nodes.push_back(new Node(vector3df(-3* o, 0, -1)         ));
+	nodes.push_back(new Node(vector3df(2, (1 + 2* o), o)     ));
+	nodes.push_back(new Node(vector3df(2, (1 + 2* o), -o)    ));
+	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), o)    ));
+	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), -o)   ));
+	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), o)    ));
+	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), -o)   ));
+	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), o)   ));
+	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), -o)  ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), o, 2)     ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), o, -2)    ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), -o, 2)    ));
+	nodes.push_back(new Node(vector3df((1 + 2* o), -o, -2)   ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, 2)    ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, -2)   ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, 2)   ));
+	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, -2)  ));
+	nodes.push_back(new Node(vector3df(o, 2, (1 + 2* o))     ));
+	nodes.push_back(new Node(vector3df(o, 2, -(1 + 2* o))    ));
+	nodes.push_back(new Node(vector3df(o, -2, (1 + 2* o))    ));
+	nodes.push_back(new Node(vector3df(o, -2, -(1 + 2* o))   ));
+	nodes.push_back(new Node(vector3df(-o, 2, (1 + 2* o))    ));
+	nodes.push_back(new Node(vector3df(-o, 2, -(1 + 2* o))   ));
+	nodes.push_back(new Node(vector3df(-o, -2, (1 + 2* o))   ));
+	nodes.push_back(new Node(vector3df(-o, -2, -(1 + 2* o))  ));
+	nodes.push_back(new Node(vector3df(1, (2 + o), 2* o)     ));
+	nodes.push_back(new Node(vector3df(1, (2 + o), -2* o)    ));
+	nodes.push_back(new Node(vector3df(1, -(2 + o), 2* o)    ));
+	nodes.push_back(new Node(vector3df(1, -(2 + o), -2* o)   ));
+	nodes.push_back(new Node(vector3df(-1, (2 + o), 2* o)    ));
+	nodes.push_back(new Node(vector3df(-1, (2 + o), -2* o)   ));
+	nodes.push_back(new Node(vector3df(-1, -(2 + o), 2* o)   ));
+	nodes.push_back(new Node(vector3df(-1, -(2 + o), -2* o)  ));
+	nodes.push_back(new Node(vector3df((2 + o), 2* o, 1)     ));
+	nodes.push_back(new Node(vector3df((2 + o), 2* o, -1)    ));
+	nodes.push_back(new Node(vector3df((2 + o), -2* o, 1)    ));
+	nodes.push_back(new Node(vector3df((2 + o), -2* o, -1)   ));
+	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, 1)    ));
+	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, -1)   ));
+	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, 1)   ));
+	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, -1)  ));
+	nodes.push_back(new Node(vector3df(2* o, 1, (2 + o))     ));
+	nodes.push_back(new Node(vector3df(2* o, 1, -(2 + o))    ));
+	nodes.push_back(new Node(vector3df(2* o, -1, (2 + o))    ));
+	nodes.push_back(new Node(vector3df(2* o, -1, -(2 + o))   ));
+	nodes.push_back(new Node(vector3df(-2 * o, 1, (2 + o))   ));
+	nodes.push_back(new Node(vector3df(-2 * o, 1, -(2 + o))  ));
+	nodes.push_back(new Node(vector3df(-2 * o, -1, (2 + o))  ));
+	nodes.push_back(new Node(vector3df(-2 * o, -1, -(2 + o)) ));
+
+	/**
+	 * Create edges between nodes. Each node has 3 shortest edges, so the below
+	 * algorithm iterates over the list of nodes and finds the 3 shortest paths.
+	 * These 3 nodes are added to the edges list.
+	 */
+	for (u32 i = 0; i < nodes.size(); ++i) {
+		for (u32 j = 0; j < nodes.size(); ++j) {
+			if (i != j) {
+				f32 distance = nodes[i]->position.getDistanceFrom(nodes[j]->position);
+				if (nodes[i]->edges.size() < 3) {
+					// add it straight away
+					nodes[i]->edges.push_back(Edge(distance, nodes[i], nodes[j]));
+				}
+				else {
+					// check if it is smaller than any of the edges currently stored
+					u32 largestIndex = 0;
+					f32 largestDistance = nodes[i]->edges[0].weight;
+
+					for (u32 k = 1; k < nodes[i]->edges.size(); ++k) {
+
+						// first we need to find the largest value in the edges array
+						if (nodes[i]->edges[k].weight > largestDistance) {
+							largestIndex = k;
+							largestDistance = nodes[i]->edges[k].weight;
+						}
+					}
+
+					// if our new edge is smaller than the largest, we replace it
+					if (distance < largestDistance) {
+						nodes[i]->edges[largestIndex].weight = distance;
+						nodes[i]->edges[largestIndex].to = nodes[j];
+					}
+
+				}
+			}
+		}
+	}
 
 	return nodes;
+}
+
+void PrintNodes(vector<Node*> nodes) {
+	for (u32 i = 0; i < nodes.size(); ++i) {
+		cout << i << " " << nodes[i] << ": e(" << nodes[i]->edges.size() << "):";
+		// for each edge
+		for (u32 j = 0; j < nodes[i]->edges.size(); ++j) {
+			// iterate over the nodes and locate the index of which node it points to
+
+			cout << "(edge " << j << ": ";
+			//for (u32 k = 0; k < nodes.size(); ++k) {
+			//	if (nodes[i].edges[j].to == &nodes[k]) cout << k;
+			//}
+			cout << nodes[i]->edges[j].to << ")";
+		}
+		cout << endl;
+	}
 }
 
 int main(void) {
@@ -224,13 +298,13 @@ int main(void) {
 		mc->drop();
 	}
 
-
-	vector<Node> nodes = GenerateNodes();
+	vector<Node*> nodes = GenerateNodes();
+	PrintNodes(nodes);
 		
 	for (int i = 0; i < nodes.size(); i++) {
 		std::string name();
 		scene::ISceneNode* node = smgr->addCubeSceneNode(0.01f);
-		node->setPosition(nodes[i].position);
+		node->setPosition(nodes[i]->position);
 		node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
 		node->setMaterialFlag(video::EMF_LIGHTING, false);
 		node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
