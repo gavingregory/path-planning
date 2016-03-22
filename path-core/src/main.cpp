@@ -378,8 +378,8 @@ int main(void) {
 			driver->setTransform(ETS_WORLD, matrix4());
 			// draw lines
 			smgr->getVideoDriver()->drawVertexPrimitiveList(
-				pVertexBuffer->pointer(), 2,
-				pIndexBuffer->pointer(), 180,
+				pVertexBuffer->pointer(), pVertexBuffer->size(),
+				pIndexBuffer->pointer(), pVertexBuffer->size() / 2,
 				EVT_STANDARD,
 				EPT_LINES,
 				EIT_16BIT);
