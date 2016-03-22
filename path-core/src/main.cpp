@@ -11,6 +11,7 @@ using namespace io;
 using namespace gui;
 
 using std::vector;
+using std::string;
 using std::cout;
 using std::endl;
 
@@ -113,81 +114,85 @@ struct Edge {
 };
 
 struct Node {
+	std::string name;
 	vector3df position;
 	SColor color;
 	vector<Edge> edges;
+	Edge* parentEdge;
+	bool visited;
 	u32 f;
 	u32 g;
 	u32 h;
 	void reset() { f = g = h = 0; }
-	Node(vector3df pos, SColor color) : f(0), g(0), h(0), position(pos), color(color) {};
+	Node(std::string name, vector3df pos, SColor color) : f(0), g(0), h(0), position(pos), color(color), visited(false), name(name), parentEdge(nullptr) {};
 };
 
 vector<Node*> GenerateNodes() {
 	float o = (1.0f + sqrt(5.0f)) / 2.0f;
 	vector<Node*> nodes;
-
+	int i = 0;
+	std::string title = "node ";
 	// add nodes to vector
-	nodes.push_back(new Node(vector3df(0, 1, 3 * o)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(0, 1, -3 * o)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(0, -1, 3* o)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(0, -1, -3* o)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, 3* o, 0)           , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, -3* o, 0)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, 3* o, 0)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, -3* o, 0)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(3* o, 0, 1)           , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(3* o, 0, -1)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-3* o, 0, 1)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-3* o, 0, -1)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2, (1 + 2* o), o)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2, (1 + 2* o), -o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2, -(1 + 2* o), -o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2, (1 + 2* o), -o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2, -(1 + 2* o), -o)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), o, 2)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), o, -2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), -o, 2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((1 + 2* o), -o, -2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, 2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), o, -2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, 2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(1 + 2* o), -o, -2)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(o, 2, (1 + 2* o))     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, (2 + o), -2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, -(2 + o), 2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(1, -(2 + o), -2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, (2 + o), 2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, (2 + o), -2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, -(2 + o), 2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-1, -(2 + o), -2* o)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((2 + o), 2* o, 1)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((2 + o), 2* o, -1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((2 + o), -2* o, 1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df((2 + o), -2* o, -1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, 1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(2 + o), 2* o, -1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, 1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-(2 + o), -2* o, -1)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2* o, 1, (2 + o))     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2* o, 1, -(2 + o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, 3 * o)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, -3 * o)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, 3* o)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, -3* o)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, 3* o, 0)           , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -3* o, 0)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, 3* o, 0)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -3* o, 0)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, 1)           , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, -1)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, 1)          , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, -1)         , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), o)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), -o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), -o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), -o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), -o)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, 2)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, -2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, 2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, -2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, 2)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, -2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, 2)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, -2)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, (1 + 2* o))     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), -2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), 2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), -2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), 2* o)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), -2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), 2* o)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), -2* o)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, 1)     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, -1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, 1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, -1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, 1)    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, -1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, 1)   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, -1)  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, (2 + o))     , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, -(2 + o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0) ));
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0) ));
 
 	/**
 	 * Create edges between nodes. Each node has 3 shortest edges, so the below
@@ -247,6 +252,71 @@ void PrintNodes(vector<Node*> nodes) {
 	}
 }
 
+vector<Edge> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
+	// G = Distance from Start
+	// H = Distance to End
+	// F = G + H
+	
+	// 0. Reset all algorithm info on nodes
+	for (u16 i = 0; i < nodes.size(); ++i) {
+		nodes[i]->visited = false;
+		nodes[i]->f = 0.0f;
+		nodes[i]->g = 0.0f;
+		nodes[i]->h = 0.0f;
+		nodes[i]->parentEdge = nullptr;
+	}
+
+	vector<Edge> path;
+	Node* currentNode = start;
+	bool finished = false;
+
+	while (!finished) {
+		// 1. Mark a block off list
+		currentNode->visited = true;
+
+		Node* lowestFNode = nullptr;
+
+		// 2. Analyse adjacent blocks
+		for (u8 i = 0; i < currentNode->edges.size(); ++i) {
+			// if we have not visited the connected node ...
+			if (!currentNode->edges[i].to->visited) {
+				
+				Node* connectedNode = currentNode->edges[i].to;
+
+				// check if we've reached the target
+				if (connectedNode != end) {
+					// set parent to be the current node
+					connectedNode->parentEdge = &currentNode->edges[i];
+
+					// calculate g
+					connectedNode->g = currentNode->g + currentNode->edges[i].weight;
+					// calculate h
+					connectedNode->h = currentNode->position.getDistanceFrom(connectedNode->position);
+					// calculate f
+					connectedNode->f = connectedNode->g + connectedNode->h;
+
+					// update lowest f node pointer
+					if (!lowestFNode || connectedNode->f < lowestFNode->f)
+						lowestFNode = connectedNode;
+				}
+				else {
+					// SUCCESS! Build path and return it
+					connectedNode->parentEdge = &currentNode->edges[i];
+					currentNode = connectedNode;
+					while (currentNode != start) {
+						path.push_back(Edge(*(currentNode->parentEdge)));
+						currentNode = currentNode->parentEdge->from;
+					}
+					return path;
+				}
+			}
+		}
+
+		// 3. Pick block with lowest F
+		currentNode = lowestFNode;
+	}
+}
+
 int main(void) {
 
 	// create device
@@ -300,8 +370,22 @@ int main(void) {
 
 	vector<Node*> nodes = GenerateNodes();
 	PrintNodes(nodes);
-		
 
+
+	/**
+	* PATH
+	* FINDING
+	* ALGORITHM
+	* HERE
+	*/
+	vector<Edge> path = AStarPathAlgorithm(nodes, nodes[0], nodes[1]);
+	
+	cout << "Path Found: Size = " << path.size() << endl;
+	for (int i = 0; i < path.size(); ++i) {
+		cout << "from: " << path[i].from->name << " to: " << path[i].to->name << " weight: " << path[i].weight << endl;
+	}
+
+	
 	// buffers for lines between nodes
 	//S3DVertex pVertexBuffer[2];
 	//pVertexBuffer[0] = S3DVertex(vector3df(), vector3df(), SColor(), vector2df());
@@ -312,7 +396,7 @@ int main(void) {
 	IVertexBuffer* lineVertexBuffer = new CVertexBuffer(EVT_STANDARD);
 	IIndexBuffer* lineIndexBuffer = new CIndexBuffer(EIT_16BIT);
 	SMaterial lineMaterial = SMaterial();
-	lineMaterial.Thickness = 3;
+	lineMaterial.Thickness = 1;
 
 	for (u32 i = 0; i < nodes.size(); ++i) {
 		std::string name();
@@ -321,9 +405,10 @@ int main(void) {
 		node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
 		node->setMaterialFlag(video::EMF_LIGHTING, false);
 		node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
+
 		smgr->addTextSceneNode(gui->getBuiltInFont(),
 			std::to_wstring(i).c_str(),
-			video::SColor(255, 255, 255, 255), node);
+			video::SColor(255, 18, 48, 12), node);
 		
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(255,0, 255,0), vector2df()));
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), nodes[i]->edges[0].to->color, vector2df()));
