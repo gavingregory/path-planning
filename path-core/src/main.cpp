@@ -127,6 +127,7 @@ vector<Node*> GenerateNodes() {
 	vector<Node*> nodes;
 
 	// add nodes to vector
+	nodes.push_back(new Node(vector3df(0, 1, 3 * o)          ));
 	nodes.push_back(new Node(vector3df(0, 1, -3 * o)         ));
 	nodes.push_back(new Node(vector3df(0, -1, 3* o)          ));
 	nodes.push_back(new Node(vector3df(0, -1, -3* o)         ));
@@ -271,37 +272,46 @@ int main(void) {
 	s32 newMaterialType1 = 0;
 	s32 newMaterialType2 = 0;
 
-	if (gpu)
-	{
-		MyShaderCallBack* mc = new MyShaderCallBack();
+	MyShaderCallBack* mc = new MyShaderCallBack();
 
-		// create the shaders depending on if the user wanted high level
-		// or low level shaders:
+	// create the shaders depending on if the user wanted high level
+	// or low level shaders:
 
-		// Choose the desired shader type. Default is the native
-		// shader type for the driver, for Cg pass the special
-		// enum value EGSL_CG
-		const video::E_GPU_SHADING_LANGUAGE shadingLanguage = video::EGSL_DEFAULT;
+	// Choose the desired shader type. Default is the native
+	// shader type for the driver, for Cg pass the special
+	// enum value EGSL_CG
+	const video::E_GPU_SHADING_LANGUAGE shadingLanguage = video::EGSL_DEFAULT;
 
-		// create material from high level shaders (hlsl, glsl or cg)
+	// create material from high level shaders (hlsl, glsl or cg)
 
-		newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
-			vsFileName, "vertexMain", video::EVST_VS_1_1,
-			psFileName, "pixelMain", video::EPST_PS_1_1,
-			mc, video::EMT_SOLID, 0, shadingLanguage);
+	newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
+		vsFileName, "vertexMain", video::EVST_VS_1_1,
+		psFileName, "pixelMain", video::EPST_PS_1_1,
+		mc, video::EMT_SOLID, 0, shadingLanguage);
 
-		newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
-			vsFileName, "vertexMain", video::EVST_VS_1_1,
-			psFileName, "pixelMain", video::EPST_PS_1_1,
-			mc, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
+	newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
+		vsFileName, "vertexMain", video::EVST_VS_1_1,
+		psFileName, "pixelMain", video::EPST_PS_1_1,
+		mc, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
 		
-		mc->drop();
-	}
+	mc->drop();
+
 
 	vector<Node*> nodes = GenerateNodes();
 	PrintNodes(nodes);
 		
-	for (int i = 0; i < nodes.size(); i++) {
+
+	// buffers for lines between nodes
+	//S3DVertex pVertexBuffer[2];
+	//pVertexBuffer[0] = S3DVertex(vector3df(), vector3df(), SColor(), vector2df());
+	//pVertexBuffer[1] = S3DVertex(vector3df(0, 100, 0), vector3df(), SColor(), vector2df());
+	//
+	//u16 pIndexBuffer[2] = { 0,1 };
+
+	IVertexBuffer* pVertexBuffer = new CVertexBuffer(EVT_STANDARD);
+	IIndexBuffer* pIndexBuffer = new CIndexBuffer(EIT_16BIT);
+
+	for (u32 i = 0; i < nodes.size(); ++i) {
 		std::string name();
 		scene::ISceneNode* node = smgr->addCubeSceneNode(0.01f);
 		node->setPosition(nodes[i]->position);
@@ -311,6 +321,19 @@ int main(void) {
 		smgr->addTextSceneNode(gui->getBuiltInFont(),
 			std::to_wstring(i).c_str(),
 			video::SColor(255, 255, 255, 255), node);
+		
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), SColor(), vector2df()));
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[1].to->position, vector3df(), SColor(), vector2df()));
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(), vector2df()));
+		pVertexBuffer->push_back(S3DVertex(nodes[i]->edges[2].to->position, vector3df(), SColor(), vector2df()));
+		pIndexBuffer->push_back((i * 6) + 0);
+		pIndexBuffer->push_back((i * 6) + 1);
+		pIndexBuffer->push_back((i * 6) + 2);
+		pIndexBuffer->push_back((i * 6) + 3);
+		pIndexBuffer->push_back((i * 6) + 4);
+		pIndexBuffer->push_back((i * 6) + 5);
 	}
 
 	// add a nice skybox
@@ -347,7 +370,20 @@ int main(void) {
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, video::SColor(255, 0, 0, 0));
+
 			smgr->drawAll();
+
+			driver->setMaterial(SMaterial());
+
+			driver->setTransform(ETS_WORLD, matrix4());
+			// draw lines
+			smgr->getVideoDriver()->drawVertexPrimitiveList(
+				pVertexBuffer->pointer(), 2,
+				pIndexBuffer->pointer(), 180,
+				EVT_STANDARD,
+				EPT_LINES,
+				EIT_16BIT);
+
 			driver->endScene();
 
 			// Work out a frame delta time.
@@ -391,9 +427,6 @@ int main(void) {
 		}
 
 	device->drop();
-
-
-
 
 	//vector<Node> nodes = GenerateNodes();
 	//
