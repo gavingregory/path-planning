@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 using namespace irr;
 using namespace core;
@@ -30,9 +31,49 @@ held down, and so we will remember the current state of each key.
 class MyEventReceiver : public IEventReceiver
 {
 public:
+
+	struct SMouseState {
+		position2di Position;
+		bool LeftButtonDown;
+		bool RightButtonDown;
+		SMouseState() : LeftButtonDown(false), RightButtonDown(false) {}
+	} MouseState;
+
 	// This is the one method that we have to implement
 	virtual bool OnEvent(const SEvent& event)
 	{
+		// Remember the mouse state
+		if (event.EventType == irr::EET_MOUSE_INPUT_EVENT)
+		{
+			switch (event.MouseInput.Event)
+			{
+			case EMIE_LMOUSE_PRESSED_DOWN:
+				MouseState.LeftButtonDown = true;
+				break;
+
+			case EMIE_LMOUSE_LEFT_UP:
+				MouseState.LeftButtonDown = false;
+				break;
+
+			case EMIE_MOUSE_MOVED:
+				MouseState.Position.X = event.MouseInput.X;
+				MouseState.Position.Y = event.MouseInput.Y;
+				break;
+
+			case EMIE_RMOUSE_PRESSED_DOWN:
+				MouseState.RightButtonDown = true;
+				break;
+
+			case EMIE_RMOUSE_LEFT_UP:
+				MouseState.RightButtonDown = false;
+				break;
+
+			default:
+				// We won't use the wheel
+				break;
+			}
+		}
+
 		// Remember whether each key is down or up
 		if (event.EventType == irr::EET_KEY_INPUT_EVENT)
 			KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
@@ -55,8 +96,6 @@ private:
 	// We use this array to store the current state of each key
 	bool KeyIsDown[KEY_KEY_CODES_COUNT];
 };
-
-
 
 class MyShaderCallBack : public video::IShaderConstantSetCallBack
 {
@@ -118,13 +157,20 @@ struct Node {
 	vector3df position;
 	SColor color;
 	vector<Edge> edges;
-	Edge* parentEdge;
+	Node* parent;
 	bool visited;
-	u32 f;
-	u32 g;
-	u32 h;
+	bool passable;
+	f32 f;
+	f32 g;
+	f32 h;
 	void reset() { f = g = h = 0; }
-	Node(std::string name, vector3df pos, SColor color) : f(0), g(0), h(0), position(pos), color(color), visited(false), name(name), parentEdge(nullptr) {};
+	Node(std::string name, vector3df pos, SColor color, bool passable) : f(0), g(0), h(0), position(pos), color(color), visited(false), name(name), parent(nullptr), passable(passable) {};
+	friend bool operator<(const Node& l, const Node& r) {
+		return l.h < r.h;
+	}
+	friend bool operator>(const Node& l, const Node& r) {
+		return l.h > r.h;
+	}
 };
 
 vector<Node*> GenerateNodes() {
@@ -132,67 +178,67 @@ vector<Node*> GenerateNodes() {
 	vector<Node*> nodes;
 	int i = 0;
 	std::string title = "node ";
-	// add nodes to vector
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, 3 * o)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, -3 * o)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, 3* o)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, -3* o)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, 3* o, 0)           , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -3* o, 0)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, 3* o, 0)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -3* o, 0)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, 1)           , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, -1)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, 1)          , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, -1)         , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), o)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), -o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), -o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), -o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), -o)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, 2)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, -2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, 2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, -2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, 2)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, -2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, 2)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, -2)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, (1 + 2* o))     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), -2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), 2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), -2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), 2* o)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), -2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), 2* o)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), -2* o)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, 1)     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, -1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, 1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, -1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, 1)    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, -1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, 1)   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, -1)  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, (2 + o))     , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, -(2 + o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0) ));
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0) ));
+	// add nodes to vectorf
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, 3 * o)          , SColor(255,255,0,0), true )); // 00
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, -3 * o)         , SColor(255,255,0,0), true )); // 01
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, 3* o)          , SColor(255,255,0,0), true )); // 02
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, -3* o)         , SColor(255,255,0,0), true )); // 03
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, 3* o, 0)           , SColor(255,255,0,0), true )); // 04
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -3* o, 0)          , SColor(255,255,0,0), true )); // 05
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, 3* o, 0)          , SColor(255,255,0,0), true )); // 06
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -3* o, 0)         , SColor(255,255,0,0), true )); // 07
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, 1)           , SColor(255,255,0,0), true )); // 08
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(3* o, 0, -1)          , SColor(255,255,0,0), true )); // 09
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, 1)          , SColor(255,255,0,0), true )); // 10
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-3* o, 0, -1)         , SColor(255,255,0,0), true )); // 11
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), o)     , SColor(255,255,0,0), true )); // 12
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, (1 + 2* o), -o)    , SColor(255,255,0,0), true )); // 13
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), o)    , SColor(255,255,0,0), true )); // 14
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2, -(1 + 2* o), -o)   , SColor(255,255,0,0), true )); // 15
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), o)    , SColor(255,255,0,0), true )); // 16
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, (1 + 2* o), -o)   , SColor(255,255,0,0), true )); // 17
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), o)   , SColor(255,255,0,0), true )); // 18
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2, -(1 + 2* o), -o)  , SColor(255,255,0,0), true )); // 19
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, 2)     , SColor(255,255,0,0), true )); // 20
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), o, -2)    , SColor(255,255,0,0), true )); // 21
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, 2)    , SColor(255,255,0,0), true )); // 22
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((1 + 2* o), -o, -2)   , SColor(255,255,0,0), true )); // 23
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, 2)    , SColor(255,255,0,0), true )); // 24
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), o, -2)   , SColor(255,255,0,0), true )); // 25
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, 2)   , SColor(255,255,0,0), true )); // 26
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(1 + 2* o), -o, -2)  , SColor(255,255,0,0), true )); // 27
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, (1 + 2* o))     , SColor(255,255,0,0), true )); // 28
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0), true )); // 29
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0), true )); // 30
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0), true )); // 31
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0), true )); // 32
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0), false )); // 33
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0), true )); // 34
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0), true )); // 35
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0), true )); // 36
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), -2* o)    , SColor(255,255,0,0), true )); // 37
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), 2* o)    , SColor(255,255,0,0), true )); // 38
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, -(2 + o), -2* o)   , SColor(255,255,0,0), true )); // 39
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), 2* o)    , SColor(255,255,0,0), true )); // 40
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, (2 + o), -2* o)   , SColor(255,255,0,0), true )); // 41
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), 2* o)   , SColor(255,255,0,0), true )); // 42
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-1, -(2 + o), -2* o)  , SColor(255,255,0,0), true )); // 43
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, 1)     , SColor(255,255,0,0), true )); // 44
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), 2* o, -1)    , SColor(255,255,0,0), true )); // 45
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, 1)    , SColor(255,255,0,0), true )); // 46
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df((2 + o), -2* o, -1)   , SColor(255,255,0,0), true )); // 47
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, 1)    , SColor(255,255,0,0), true )); // 48
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), 2* o, -1)   , SColor(255,255,0,0), true )); // 49
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, 1)   , SColor(255,255,0,0), true )); // 50
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-(2 + o), -2* o, -1)  , SColor(255,255,0,0), true )); // 51
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, (2 + o))     , SColor(255,255,0,0), true )); // 52
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, 1, -(2 + o))    , SColor(255,255,0,0), true )); // 53
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0), true )); // 54
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0), true )); // 55
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0), true )); // 56
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0), false )); // 57
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0), true )); // 58
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0), true )); // 59
 
 	/**
 	 * Create edges between nodes. Each node has 3 shortest edges, so the below
@@ -252,70 +298,207 @@ void PrintNodes(vector<Node*> nodes) {
 	}
 }
 
-vector<Edge> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
-	// G = Distance from Start
-	// H = Distance to End
-	// F = G + H
-	
+void listRemove(vector<Node*> &nodes, Node* value) {
+	nodes.erase(std::remove(nodes.begin(), nodes.end(), value), nodes.end());
+}
+
+void listAdd(vector<Node*> &nodes, Node* value) {
+	nodes.push_back(value);
+}
+
+void listSort(vector<Node*> &nodes) {
+	struct PointerCompare {
+		bool operator()(const Node* l, const Node* r) {
+			return (*l).h < (*r).h;
+		}
+	};
+	std::sort(nodes.begin(), nodes.end(), PointerCompare());
+}
+
+int listFind(vector<Node*> &nodes, Node* value) {
+	vector<Node*>::iterator it = std::find(nodes.begin(), nodes.end(), value);
+	// return -1 if not found
+	if (it == nodes.end()) return -1;
+	// return the index of the element
+	return (it - nodes.begin());
+}
+
+vector<Node*> AStarPathAlgorithm2(vector<Node*> nodes, Node* start, Node* end) {
+
 	// 0. Reset all algorithm info on nodes
 	for (u16 i = 0; i < nodes.size(); ++i) {
 		nodes[i]->visited = false;
 		nodes[i]->f = 0.0f;
 		nodes[i]->g = 0.0f;
 		nodes[i]->h = 0.0f;
-		nodes[i]->parentEdge = nullptr;
+		nodes[i]->parent = nullptr;
 	}
 
-	vector<Edge> path;
-	Node* currentNode = start;
-	bool finished = false;
+	Node* current = start;
+	std::vector<Node*> openList;
+	std::vector<Node*> closedList;
 
-	while (!finished) {
-		// 1. Mark a block off list
-		currentNode->visited = true;
+	bool pathFound = false;
+	vector<Node*> path;
 
-		Node* lowestFNode = nullptr;
+	// add CURRENT to open list
+	listAdd(openList, current);
 
-		// 2. Analyse adjacent blocks
-		for (u8 i = 0; i < currentNode->edges.size(); ++i) {
-			// if we have not visited the connected node ...
-			if (!currentNode->edges[i].to->visited) {
-				
-				Node* connectedNode = currentNode->edges[i].to;
+	while (!pathFound) {
+		if (openList.size() > 0) {
 
-				// check if we've reached the target
-				if (connectedNode != end) {
-					// set parent to be the current node
-					connectedNode->parentEdge = &currentNode->edges[i];
+			// sort the lists
+			listSort(openList);
+			listSort(closedList); // TODO: do we need to sort the closed list?
 
-					// calculate g
-					connectedNode->g = currentNode->g + currentNode->edges[i].weight;
-					// calculate h
-					connectedNode->h = currentNode->position.getDistanceFrom(connectedNode->position);
-					// calculate f
-					connectedNode->f = connectedNode->g + connectedNode->h;
+			// set current node to be smallest in openlist
+			current = openList[0];
+			cout << current->name << endl;
+			// drop current node from open list and add to closed list
+			listRemove(openList, current);
+			listAdd(closedList, current);
 
-					// update lowest f node pointer
-					if (!lowestFNode || connectedNode->f < lowestFNode->f)
-						lowestFNode = connectedNode;
-				}
-				else {
-					// SUCCESS! Build path and return it
-					connectedNode->parentEdge = &currentNode->edges[i];
-					currentNode = connectedNode;
-					while (currentNode != start) {
-						path.push_back(Edge(*(currentNode->parentEdge)));
-						currentNode = currentNode->parentEdge->from;
+			// check if we have found our destination
+			if (current == end) {
+				cout << "FOUND OUR TARGET WOWOWOOWO" << endl;
+				break;
+			}
+
+			// iterate over connected nodes
+			for (u8 i = 0; i < current->edges.size(); ++i) {
+				Node* connected = current->edges[i].to;
+
+				// ignore flag: set ignore to true if the node is impassible
+				bool ignore = (!connected->passable || listFind(closedList, connected) != -1);
+
+				if (!ignore) {
+					// add connected node to open list
+					if (listFind(openList, connected) == -1) {
+						// not in list so add it
+						listAdd(openList, connected);
+						// set all connected nodes parent to be THIS node
+						connected->parent = current;
+						// calculate G
+						connected->g = current->g + current->edges[i].weight;
+						// calculate H
+						connected->h = connected->position.getDistanceFrom(end->position);
+						// calculate F
+						connected->f = connected->g + connected->h;
+					} else {
+						// is already in list, so need to possibly update it
+						f32 newG = current->g + current->edges[i].weight;
+						bool betterPathExists = newG < connected->g;
+						if (betterPathExists) {
+							connected->parent = current;
+							connected->g = current->g + current->edges[i].weight;
+							connected->f = connected->g + connected->h;
+							listSort(openList); // resort list
+						}
 					}
-					return path;
 				}
 			}
 		}
-
-		// 3. Pick block with lowest F
-		currentNode = lowestFNode;
+		else {
+			cout << "OPENLIST EMPTY" << endl;
+			break;
+		}
 	}
+
+	if (current == end) {
+		// PATH FOUND
+		while (current != start) {
+			path.push_back(current);
+			current = current->parent;
+		}
+	}
+	else {
+		// NO PATH FOUND
+		cout << "Really, no path found." << endl;
+	}
+	return path;
 }
+
+//vector<Edge> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
+//	// G = Distance from Start
+//	// H = Distance to End
+//	// F = G + H
+//	
+//	// 0. Reset all algorithm info on nodes
+//	for (u16 i = 0; i < nodes.size(); ++i) {
+//		nodes[i]->visited = false;
+//		nodes[i]->f = 0.0f;
+//		nodes[i]->g = 0.0f;
+//		nodes[i]->h = 0.0f;
+//		nodes[i]->parentEdge = nullptr;
+//	}
+//
+//	vector<Edge> path;
+//	Node* currentNode = start;
+//	bool finished = false;
+//
+//	while (!finished) {
+//		// 1. Mark a block off list
+//		currentNode->visited = true;
+//
+//		Node* lowestFNode = nullptr;
+//
+//		// 2. Analyse adjacent blocks
+//		for (u8 i = 0; i < currentNode->edges.size(); ++i) {
+//			// if we have not visited the connected node ...
+//			if (!currentNode->edges[i].to->visited) {
+//				
+//				Node* connectedNode = currentNode->edges[i].to;
+//
+//				// check if we've reached the target
+//				if (connectedNode != end) {
+//					// set parent to be the current node
+//					connectedNode->parentEdge = &currentNode->edges[i];
+//
+//					// calculate g
+//					connectedNode->g = currentNode->g + currentNode->edges[i].weight;
+//					// calculate h
+//					connectedNode->h = currentNode->position.getDistanceFrom(connectedNode->position);
+//					// calculate f
+//					connectedNode->f = connectedNode->g + connectedNode->h;
+//
+//					// update lowest f node pointer
+//					if (!lowestFNode || connectedNode->f < lowestFNode->f)
+//						lowestFNode = connectedNode;
+//				}
+//				else {
+//					// SUCCESS! Build path and return it
+//					connectedNode->parentEdge = &currentNode->edges[i];
+//					currentNode = connectedNode;
+//					while (currentNode != start) {
+//						path.push_back(Edge(*(currentNode->parentEdge)));
+//						currentNode = currentNode->parentEdge->from;
+//					}
+//					return path;
+//				}
+//			}
+//		}
+//
+//		// 3. Pick block with lowest F
+//		currentNode = lowestFNode;
+//	}
+//}
+
+enum
+{
+	// I use this ISceneNode ID to indicate a scene node that is
+	// not pickable by getSceneNodeAndCollisionPointFromRay()
+	ID_IsNotPickable = 0,
+
+	// I use this flag in ISceneNode IDs to indicate that the
+	// scene node can be picked by ray selection.
+	IDFlag_IsPickable = 1 << 0,
+
+	// I use this flag in ISceneNode IDs to indicate that the
+	// scene node can be highlighted.  In this example, the
+	// homonids can be highlighted, but the level mesh can't.
+	IDFlag_IsHighlightable = 1 << 1
+};
+
 
 int main(void) {
 
@@ -367,10 +550,8 @@ int main(void) {
 		
 	mc->drop();
 
-
 	vector<Node*> nodes = GenerateNodes();
 	PrintNodes(nodes);
-
 
 	/**
 	* PATH
@@ -378,14 +559,13 @@ int main(void) {
 	* ALGORITHM
 	* HERE
 	*/
-	vector<Edge> path = AStarPathAlgorithm(nodes, nodes[0], nodes[1]);
+	vector<Node*> path = AStarPathAlgorithm2(nodes, nodes[1], nodes[25]);
 	
 	cout << "Path Found: Size = " << path.size() << endl;
 	for (int i = 0; i < path.size(); ++i) {
-		cout << "from: " << path[i].from->name << " to: " << path[i].to->name << " weight: " << path[i].weight << endl;
+		cout << "from: " << path[i]->name << endl;
 	}
 
-	
 	// buffers for lines between nodes
 	//S3DVertex pVertexBuffer[2];
 	//pVertexBuffer[0] = S3DVertex(vector3df(), vector3df(), SColor(), vector2df());
@@ -396,19 +576,25 @@ int main(void) {
 	IVertexBuffer* lineVertexBuffer = new CVertexBuffer(EVT_STANDARD);
 	IIndexBuffer* lineIndexBuffer = new CIndexBuffer(EIT_16BIT);
 	SMaterial lineMaterial = SMaterial();
-	lineMaterial.Thickness = 1;
+	lineMaterial.Thickness = 3;
+
+	// selector
+	scene::ITriangleSelector* selector = 0;
 
 	for (u32 i = 0; i < nodes.size(); ++i) {
 		std::string name();
-		scene::ISceneNode* node = smgr->addCubeSceneNode(0.01f);
+		scene::ISceneNode* node = smgr->addSphereSceneNode(0.2f, 512,0, IDFlag_IsPickable);
 		node->setPosition(nodes[i]->position);
+		node->setDebugDataVisible(true);
+		node->setName(stringc("node"));
+		node->setID(IDFlag_IsPickable);
 		node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
 		node->setMaterialFlag(video::EMF_LIGHTING, false);
 		node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
 
 		smgr->addTextSceneNode(gui->getBuiltInFont(),
 			std::to_wstring(i).c_str(),
-			video::SColor(255, 18, 48, 12), node);
+			video::SColor(255, 18, 48, 12), node, vector3df(), ID_IsNotPickable);
 		
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(255,0, 255,0), vector2df()));
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), nodes[i]->edges[0].to->color, vector2df()));
@@ -440,9 +626,10 @@ int main(void) {
 
 	// add a camera and disable the mouse cursor
 
-	scene::ICameraSceneNode* cam = smgr->addCameraSceneNodeFPS();
+	scene::ICameraSceneNode* cam = smgr->addCameraSceneNodeFPS(0, 100.0f, 0.3f, ID_IsNotPickable, 0, 0, false);
 	cam->setPosition(core::vector3df(2, 5, 10));
 	cam->setTarget(core::vector3df(0, 0, 0));
+	cam->setName("cam");
 	device->getCursorControl()->setVisible(false);
 
 	int lastFPS = -1;
@@ -454,12 +641,23 @@ int main(void) {
 	// This is the movemen speed in units per second.
 	const f32 MOVEMENT_SPEED = 5.f;
 
+
+	// ***** DEBUG ***************
+	vector3df start;
+	vector3df end;
+	// ***** DEBUG ***************
+
+
 	while (device->run())
 		if (device->isWindowActive())
 		{
 			driver->beginScene(true, true, video::SColor(255, 0, 0, 0));
 
 			smgr->drawAll();
+
+			// *** DEBUG ****************** 
+			smgr->getVideoDriver()->draw3DLine(start, end);
+			// END DEBUG ******************
 
 			driver->setMaterial(lineMaterial);
 
@@ -472,7 +670,6 @@ int main(void) {
 				EPT_LINES,
 				EIT_16BIT);
 
-			driver->endScene();
 
 			// Work out a frame delta time.
 			const u32 now = device->getTimer()->getTime();
@@ -497,6 +694,53 @@ int main(void) {
 				camPosition.Z -= MOVEMENT_SPEED * frameDeltaTime;
 			else if (receiver.IsKeyDown(KEY_KEY_Q))
 				camPosition.Z += MOVEMENT_SPEED * frameDeltaTime;
+			
+			// simulate mouse selection
+			if (receiver.MouseState.LeftButtonDown) {
+				line3df ray = smgr->getSceneCollisionManager()->getRayFromScreenCoordinates(receiver.MouseState.Position, cam);
+
+				start = ray.start;
+				end = ray.end;
+
+				// *** DEBUG ****************** 
+				//start = cam->getPosition();
+				//end = cam->getTarget();
+				// END DEBUG ******************
+
+
+				// Tracks the current intersection point with the level or a mesh
+				core::vector3df intersection;
+				// Used to show with triangle has been hit
+				core::triangle3df hitTriangle;
+
+				// This call is all you need to perform ray/triangle collision on every scene node
+				// that has a triangle selector, including the Quake level mesh.  It finds the nearest
+				// collision point/triangle, and returns the scene node containing that point.
+				// Irrlicht provides other types of selection, including ray/triangle selector,
+				// ray/box and ellipse/triangle selector, plus associated helpers.
+				// See the methods of ISceneCollisionManager
+				scene::ISceneNode * selectedSceneNode =
+					smgr->getSceneCollisionManager()->getSceneNodeAndCollisionPointFromRay(
+						ray,
+						intersection, // This will be the position of the collision
+						hitTriangle, // This will be the triangle hit in the collision
+						IDFlag_IsPickable, // This ensures that only nodes that we have
+										   // set up to be pickable are considered
+						0); // Check the entire scene (this is actually the implicit default)
+
+				cout << intersection.X << " " << intersection.Y << " " << intersection.Z << endl;
+				if (selectedSceneNode) cout << "found one" << endl;
+
+				selectedSceneNode = smgr->getSceneCollisionManager()->getSceneNodeFromScreenCoordinatesBB(receiver.MouseState.Position,0, true);
+				
+				if (selectedSceneNode) {
+					selectedSceneNode->setMaterialFlag(video::EMF_LIGHTING, true);
+					cout << "this worked" << selectedSceneNode->getName() << endl;
+				}
+
+			}
+
+			driver->endScene();
 
 			cam->setPosition(camPosition);
 
@@ -504,7 +748,7 @@ int main(void) {
 
 			if (lastFPS != fps)
 			{
-				core::stringw str = L"Irrlicht Engine - Vertex and pixel shader example [";
+				core::stringw str = L"Buckminsterfullerene A* Algorithm [";
 				str += driver->getName();
 				str += "] FPS:";
 				str += fps;
@@ -515,26 +759,6 @@ int main(void) {
 		}
 
 	device->drop();
-
-	//vector<Node> nodes = GenerateNodes();
-	//
-	//while (device->run()) {
-	//	driver->beginScene(true, true, SColor(255, 100, 101, 140));
-	//
-	//	driver->draw2DPolygon(vector2d<s32>(50,50), 50.0f, SColor(255, 255, 255, 255), 10);
-	//
-	//	driver->draw3DTriangle(triangle3df(vector3df(-1, -1, 0), vector3df(0, 1, 0), vector3df(1, -1, 0)));
-	//
-	//	//for (int i = 0; i < nodes.size(); i++) {
-	//	//	//driver->draw3DLine(nodes[i].position, nodes[(i + 1) % (nodes.size()-1)].position, SColor(255, 255, 255, 255));
-	//	//	driver->draw3DBox()
-	//	//}
-	//
-	//	//smgr->drawAll();
-	//	//guienv->drawAll();
-	//
-	//	driver->endScene();
-	//}
 
 	return 0;
 }
