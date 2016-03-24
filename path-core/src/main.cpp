@@ -20,14 +20,10 @@ using std::endl;
 
 IrrlichtDevice* device = 0;
 
-/*
-To receive events like mouse and keyboard input, or GUI events like "the OK
-button has been clicked", we need an object which is derived from the
-irr::IEventReceiver object. There is only one method to override:
-irr::IEventReceiver::OnEvent(). This method will be called by the engine once
-when an event happens. What we really want to know is whether a key is being
-held down, and so we will remember the current state of each key.
-*/
+/**
+ * Event receiver
+ * receives keyboard and mouse events.
+ */
 class MyEventReceiver : public IEventReceiver
 {
 public:
@@ -97,6 +93,9 @@ private:
 	bool KeyIsDown[KEY_KEY_CODES_COUNT];
 };
 
+/**
+ * Shader callback
+ */
 class MyShaderCallBack : public video::IShaderConstantSetCallBack
 {
 public:
@@ -144,6 +143,10 @@ public:
 
 struct Node;
 
+/**
+ * Represents an edge between two nodes.
+ * The weight is the distance between the two nodes.
+ */
 struct Edge {
 	f32 weight;
 	Node* from;
@@ -152,6 +155,9 @@ struct Edge {
 	Edge(f32 weight, Node* from, Node* to) : from(from), to(to), weight(weight) {}
 };
 
+/**
+ * Represents a single Node on the Buckminsterfullerene structure.
+ */
 struct Node {
 	std::string name;
 	vector3df position;
@@ -173,12 +179,16 @@ struct Node {
 	}
 };
 
+/**
+ * Creates a vector of nodes represending the Buckminsterfullerene structure in 3d space
+ */
 vector<Node*> GenerateNodes() {
 	float o = (1.0f + sqrt(5.0f)) / 2.0f;
 	vector<Node*> nodes;
 	int i = 0;
 	std::string title = "node ";
-	// add nodes to vectorf
+
+	// add nodes to vector
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, 3 * o)          , SColor(255,255,0,0), true )); // 00
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, 1, -3 * o)         , SColor(255,255,0,0), true )); // 01
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(0, -1, 3* o)          , SColor(255,255,0,0), true )); // 02
@@ -281,6 +291,10 @@ vector<Node*> GenerateNodes() {
 	return nodes;
 }
 
+/**
+ * Prints out the list of nodes to std out.
+ * Used for debug purposes.
+ */
 void PrintNodes(vector<Node*> nodes) {
 	for (u32 i = 0; i < nodes.size(); ++i) {
 		cout << i << " " << nodes[i] << ": e(" << nodes[i]->edges.size() << "):";
@@ -323,8 +337,15 @@ int listFind(vector<Node*> &nodes, Node* value) {
 	return (it - nodes.begin());
 }
 
-vector<Node*> AStarPathAlgorithm2(vector<Node*> nodes, Node* start, Node* end) {
-
+/**
+ * A path finding algorithm based on the A star algorithm.
+ * resources used:
+ * http://www.policyalmanac.org/games/aStarTutorial.htm
+ * (the explanation of the algorithm, not the C++ code)
+ * https://www.youtube.com/watch?v=C0qCR18gXdU
+ * (watched to gain a high level understanding of how the algorithm works)
+ */
+vector<Node*> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
 	// 0. Reset all algorithm info on nodes
 	for (u16 i = 0; i < nodes.size(); ++i) {
 		nodes[i]->visited = false;
@@ -360,7 +381,7 @@ vector<Node*> AStarPathAlgorithm2(vector<Node*> nodes, Node* start, Node* end) {
 
 			// check if we have found our destination
 			if (current == end) {
-				cout << "FOUND OUR TARGET WOWOWOOWO" << endl;
+				// target found!
 				break;
 			}
 
@@ -369,6 +390,7 @@ vector<Node*> AStarPathAlgorithm2(vector<Node*> nodes, Node* start, Node* end) {
 				Node* connected = current->edges[i].to;
 
 				// ignore flag: set ignore to true if the node is impassible
+				// or the node is in the closed list
 				bool ignore = (!connected->passable || listFind(closedList, connected) != -1);
 
 				if (!ignore) {
@@ -418,122 +440,43 @@ vector<Node*> AStarPathAlgorithm2(vector<Node*> nodes, Node* start, Node* end) {
 	return path;
 }
 
-//vector<Edge> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
-//	// G = Distance from Start
-//	// H = Distance to End
-//	// F = G + H
-//	
-//	// 0. Reset all algorithm info on nodes
-//	for (u16 i = 0; i < nodes.size(); ++i) {
-//		nodes[i]->visited = false;
-//		nodes[i]->f = 0.0f;
-//		nodes[i]->g = 0.0f;
-//		nodes[i]->h = 0.0f;
-//		nodes[i]->parentEdge = nullptr;
-//	}
-//
-//	vector<Edge> path;
-//	Node* currentNode = start;
-//	bool finished = false;
-//
-//	while (!finished) {
-//		// 1. Mark a block off list
-//		currentNode->visited = true;
-//
-//		Node* lowestFNode = nullptr;
-//
-//		// 2. Analyse adjacent blocks
-//		for (u8 i = 0; i < currentNode->edges.size(); ++i) {
-//			// if we have not visited the connected node ...
-//			if (!currentNode->edges[i].to->visited) {
-//				
-//				Node* connectedNode = currentNode->edges[i].to;
-//
-//				// check if we've reached the target
-//				if (connectedNode != end) {
-//					// set parent to be the current node
-//					connectedNode->parentEdge = &currentNode->edges[i];
-//
-//					// calculate g
-//					connectedNode->g = currentNode->g + currentNode->edges[i].weight;
-//					// calculate h
-//					connectedNode->h = currentNode->position.getDistanceFrom(connectedNode->position);
-//					// calculate f
-//					connectedNode->f = connectedNode->g + connectedNode->h;
-//
-//					// update lowest f node pointer
-//					if (!lowestFNode || connectedNode->f < lowestFNode->f)
-//						lowestFNode = connectedNode;
-//				}
-//				else {
-//					// SUCCESS! Build path and return it
-//					connectedNode->parentEdge = &currentNode->edges[i];
-//					currentNode = connectedNode;
-//					while (currentNode != start) {
-//						path.push_back(Edge(*(currentNode->parentEdge)));
-//						currentNode = currentNode->parentEdge->from;
-//					}
-//					return path;
-//				}
-//			}
-//		}
-//
-//		// 3. Pick block with lowest F
-//		currentNode = lowestFNode;
-//	}
-//}
-
 enum
 {
-	// I use this ISceneNode ID to indicate a scene node that is
-	// not pickable by getSceneNodeAndCollisionPointFromRay()
+	// flag = node is not pickable
 	ID_IsNotPickable = 0,
 
-	// I use this flag in ISceneNode IDs to indicate that the
-	// scene node can be picked by ray selection.
-	IDFlag_IsPickable = 1 << 0,
-
-	// I use this flag in ISceneNode IDs to indicate that the
-	// scene node can be highlighted.  In this example, the
-	// homonids can be highlighted, but the level mesh can't.
-	IDFlag_IsHighlightable = 1 << 1
+	// flag = node is pickable by ray selection
+	IDFlag_IsPickable = 1 << 0
 };
 
 
 int main(void) {
 
-	// create device
+	// instance of event receiver
 	MyEventReceiver receiver;
 
 	device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(640, 480), 32, false, false, false, &receiver);
 	if (!device) return 1;
 
+	// set window title
 	device->setWindowCaption(L"Path Planning");
 
 	IVideoDriver* driver = device->getVideoDriver();
 	ISceneManager* smgr = device->getSceneManager();
 	IGUIEnvironment* gui = device->getGUIEnvironment();
 
-	io::path vsFileName; // filename for the vertex shader
-	io::path psFileName; // filename for the pixel shader
-
-	psFileName = "./res/opengl.frag";
-	vsFileName = "./res/opengl.vert";
+	io::path vsFileName = "./res/opengl.frag"; // filename for the vertex shader
+	io::path psFileName = "./res/opengl.vert"; // filename for the fragment shader
 		
 	// create materials
-
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
 	s32 newMaterialType1 = 0;
 	s32 newMaterialType2 = 0;
-
+	
+	// instance of shader callback
 	MyShaderCallBack* mc = new MyShaderCallBack();
 
-	// create the shaders depending on if the user wanted high level
-	// or low level shaders:
-
-	// Choose the desired shader type. Default is the native
-	// shader type for the driver, for Cg pass the special
-	// enum value EGSL_CG
+	// select shading language as GLSL
 	const video::E_GPU_SHADING_LANGUAGE shadingLanguage = video::EGSL_DEFAULT;
 
 	// create material from high level shaders (hlsl, glsl or cg)
@@ -559,8 +502,8 @@ int main(void) {
 	* ALGORITHM
 	* HERE
 	*/
-	vector<Node*> path = AStarPathAlgorithm2(nodes, nodes[1], nodes[25]);
-	
+	vector<Node*> path = AStarPathAlgorithm(nodes, nodes[58], nodes[1]);
+
 	cout << "Path Found: Size = " << path.size() << endl;
 	for (int i = 0; i < path.size(); ++i) {
 		cout << "from: " << path[i]->name << endl;
@@ -585,10 +528,15 @@ int main(void) {
 		std::string name();
 		scene::ISceneNode* node = smgr->addSphereSceneNode(0.2f, 512,0, IDFlag_IsPickable);
 		node->setPosition(nodes[i]->position);
-		node->setDebugDataVisible(true);
 		node->setName(stringc("node"));
 		node->setID(IDFlag_IsPickable);
-		node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
+		if (listFind(path, nodes[i]) != -1) {
+			node->setMaterialTexture(0, driver->getTexture("./res/portal7.bmp"));
+			node->setDebugDataVisible(true);
+		}
+		else {
+			node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
+		}
 		node->setMaterialFlag(video::EMF_LIGHTING, false);
 		node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
 
@@ -737,7 +685,6 @@ int main(void) {
 					selectedSceneNode->setMaterialFlag(video::EMF_LIGHTING, true);
 					cout << "this worked" << selectedSceneNode->getName() << endl;
 				}
-
 			}
 
 			driver->endScene();
