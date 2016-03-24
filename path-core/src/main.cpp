@@ -97,13 +97,16 @@ private:
 /**
  * Shader callback
  */
-class MyShaderCallBack : public video::IShaderConstantSetCallBack
+class NodeShaderCallBack : public video::IShaderConstantSetCallBack
 {
 public:
+	NodeShaderCallBack(): IShaderConstantSetCallBack() {
+		color = SColorf();
+	}
 	virtual void OnSetConstants(video::IMaterialRendererServices* services, s32 userData)
 	{
 		video::IVideoDriver* driver = services->getVideoDriver();
-
+			
 		// set inverted world matrix
 		// if we are using highlevel shaders (the user can select this when
 		// starting the program), we must set the constants by name.
@@ -126,8 +129,7 @@ public:
 
 		// set light color
 
-		video::SColorf col(0.0f, 1.0f, 1.0f, 0.0f);
-		services->setVertexShaderConstant("mLightColor", reinterpret_cast<f32*>(&col), 4);
+		services->setVertexShaderConstant("mLightColor", reinterpret_cast<f32*>(&color), 4);
 
 		// set transposed world matrix
 
@@ -140,6 +142,12 @@ public:
 		s32 TextureLayerID = 0;
 		services->setPixelShaderConstant("myTexture", &TextureLayerID, 1);
 	}
+	void setColour(SColorf color) {
+		this->color = color;
+	}
+
+private:
+	SColorf color;
 };
 
 struct Node;
@@ -222,8 +230,8 @@ vector<Node*> GenerateNodes() {
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, 2, -(1 + 2* o))    , SColor(255,255,0,0), true )); // 29
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, (1 + 2* o))    , SColor(255,255,0,0), true )); // 30
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(o, -2, -(1 + 2* o))   , SColor(255,255,0,0), true )); // 31
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0), true )); // 32
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0), false )); // 33
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, (1 + 2* o))    , SColor(255,255,0,0), true)); // 32
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, 2, -(1 + 2* o))   , SColor(255,255,0,0), true )); // 33
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, (1 + 2* o))   , SColor(255,255,0,0), true )); // 34
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-o, -2, -(1 + 2* o))  , SColor(255,255,0,0), true )); // 35
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(1, (2 + o), 2* o)     , SColor(255,255,0,0), true )); // 36
@@ -247,7 +255,7 @@ vector<Node*> GenerateNodes() {
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, (2 + o))    , SColor(255,255,0,0), true )); // 54
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(2* o, -1, -(2 + o))   , SColor(255,255,0,0), true )); // 55
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, (2 + o))   , SColor(255,255,0,0), true )); // 56
-	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0), false )); // 57
+	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, 1, -(2 + o))  , SColor(255,255,0,0), true )); // 57
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, (2 + o))  , SColor(255,255,0,0), true )); // 58
 	nodes.push_back(new Node(title + std::to_string(i++), vector3df(-2 * o, -1, -(2 + o)) , SColor(255,255,0,0), true )); // 59
 
@@ -307,7 +315,7 @@ void PrintNodes(vector<Node*> nodes) {
 			//for (u32 k = 0; k < nodes.size(); ++k) {
 			//	if (nodes[i].edges[j].to == &nodes[k]) cout << k;
 			//}
-			cout << nodes[i]->edges[j].to << ")";
+			cout << nodes[i]->edges[j].to->name << ")";
 		}
 		cout << endl;
 	}
@@ -462,6 +470,18 @@ int main(void) {
 		cin >> input_end;
 	}
 
+	// generate the nodes
+	vector<Node*> nodes = GenerateNodes();
+
+	s32 input_impassable = 0;
+	while (input_impassable != -1) {
+		cout << "All nodes are passable by default. Enter a node ID to make it impassible. -1 to continue: ";
+		cin >> input_impassable;
+		if (input_impassable >= 0 && input_impassable < 60) {
+			nodes[input_impassable]->passable = false;
+		}
+	}
+
 	// instance of event receiver
 	MyEventReceiver receiver;
 
@@ -486,9 +506,10 @@ int main(void) {
 	s32 newMaterialType2 = 0;
 	
 	// instance of shader callback
-	MyShaderCallBack* mc = new MyShaderCallBack();
+	NodeShaderCallBack* shader = new NodeShaderCallBack();
+	shader->setColour(SColorf(1.0f, 0.0f, 0.0f, 0.5f));
 
-	// select shading language as GLSL
+	// select shading language as GLSLs
 	const video::E_GPU_SHADING_LANGUAGE shadingLanguage = video::EGSL_DEFAULT;
 
 	// create material from high level shaders (hlsl, glsl or cg)
@@ -496,16 +517,16 @@ int main(void) {
 	newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
 		vsFileName, "vertexMain", video::EVST_VS_1_1,
 		psFileName, "pixelMain", video::EPST_PS_1_1,
-		mc, video::EMT_SOLID, 0, shadingLanguage);
+		shader, video::EMT_SOLID, 0, shadingLanguage);
 
 	newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
 		vsFileName, "vertexMain", video::EVST_VS_1_1,
 		psFileName, "pixelMain", video::EPST_PS_1_1,
-		mc, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
+		shader, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
 
-	mc->drop();
+	shader->drop();
 
-	vector<Node*> nodes = GenerateNodes();
+	// print node info
 	PrintNodes(nodes);
 
 	/**
@@ -540,9 +561,16 @@ int main(void) {
 		std::string name();
 		scene::ISceneNode* node = smgr->addSphereSceneNode(0.2f, 512,0, IDFlag_IsPickable);
 		node->setPosition(nodes[i]->position);
-		node->setName(stringc("node"));
+		node->setName(nodes[i]->name.c_str());
 		node->setID(IDFlag_IsPickable);
-		if (listFind(path, nodes[i]) != -1) {
+		if (i == input_start) {
+			// start node
+			node->setMaterialTexture(0, driver->getTexture("./res/particlered.bmp"));
+		}
+		else if (i == input_end) {
+			// end node
+			node->setMaterialTexture(0, driver->getTexture("./res/particlegreen.bmp"));
+		} else if (listFind(path, nodes[i]) != -1) {
 			node->setMaterialTexture(0, driver->getTexture("./res/portal7.bmp"));
 			node->setDebugDataVisible(true);
 		}
@@ -601,13 +629,6 @@ int main(void) {
 	// This is the movemen speed in units per second.
 	const f32 MOVEMENT_SPEED = 5.f;
 
-
-	// ***** DEBUG ***************
-	vector3df start;
-	vector3df end;
-	// ***** DEBUG ***************
-
-
 	while (device->run())
 		if (device->isWindowActive())
 		{
@@ -615,13 +636,20 @@ int main(void) {
 
 			smgr->drawAll();
 
-			// *** DEBUG ****************** 
-			smgr->getVideoDriver()->draw3DLine(start, end);
-			// END DEBUG ******************
+			// sine function for displaying the path
+			static float s = 0.0f;
+			s += 0.1f;
+
+			// iterate over scene nodes that are part of the path and make the do something
+			for (u32 i = 0; i < path.size(); ++i) {
+				ISceneNode* n = smgr->getSceneNodeFromName(path[i]->name.c_str());
+				n->setScale(vector3df((sin(s) * 0.1f)  + 1.0f));
+			}
 
 			driver->setMaterial(lineMaterial);
 
 			driver->setTransform(ETS_WORLD, matrix4());
+
 			// draw lines
 			smgr->getVideoDriver()->drawVertexPrimitiveList(
 				lineVertexBuffer->pointer(), lineVertexBuffer->size(),
@@ -655,50 +683,6 @@ int main(void) {
 			else if (receiver.IsKeyDown(KEY_KEY_Q))
 				camPosition.Z += MOVEMENT_SPEED * frameDeltaTime;
 			
-			// simulate mouse selection
-			if (receiver.MouseState.LeftButtonDown) {
-				line3df ray = smgr->getSceneCollisionManager()->getRayFromScreenCoordinates(receiver.MouseState.Position, cam);
-
-				start = ray.start;
-				end = ray.end;
-
-				// *** DEBUG ****************** 
-				//start = cam->getPosition();
-				//end = cam->getTarget();
-				// END DEBUG ******************
-
-
-				// Tracks the current intersection point with the level or a mesh
-				core::vector3df intersection;
-				// Used to show with triangle has been hit
-				core::triangle3df hitTriangle;
-
-				// This call is all you need to perform ray/triangle collision on every scene node
-				// that has a triangle selector, including the Quake level mesh.  It finds the nearest
-				// collision point/triangle, and returns the scene node containing that point.
-				// Irrlicht provides other types of selection, including ray/triangle selector,
-				// ray/box and ellipse/triangle selector, plus associated helpers.
-				// See the methods of ISceneCollisionManager
-				scene::ISceneNode * selectedSceneNode =
-					smgr->getSceneCollisionManager()->getSceneNodeAndCollisionPointFromRay(
-						ray,
-						intersection, // This will be the position of the collision
-						hitTriangle, // This will be the triangle hit in the collision
-						IDFlag_IsPickable, // This ensures that only nodes that we have
-										   // set up to be pickable are considered
-						0); // Check the entire scene (this is actually the implicit default)
-
-				cout << intersection.X << " " << intersection.Y << " " << intersection.Z << endl;
-				if (selectedSceneNode) cout << "found one" << endl;
-
-				selectedSceneNode = smgr->getSceneCollisionManager()->getSceneNodeFromScreenCoordinatesBB(receiver.MouseState.Position,0, true);
-				
-				if (selectedSceneNode) {
-					selectedSceneNode->setMaterialFlag(video::EMF_LIGHTING, true);
-					cout << "this worked" << selectedSceneNode->getName() << endl;
-				}
-			}
-
 			driver->endScene();
 
 			cam->setPosition(camPosition);
