@@ -441,6 +441,7 @@ vector<Node*> AStarPathAlgorithm(vector<Node*> nodes, Node* start, Node* end) {
 			path.push_back(current);
 			current = current->parent;
 		}
+		path.push_back(current); // push the final (end) node into the path
 	}
 	else {
 		// NO PATH FOUND
@@ -502,29 +503,43 @@ int main(void) {
 
 	// create materials
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
-	s32 newMaterialType1 = 0;
-	s32 newMaterialType2 = 0;
-	
+	s32 redMaterialType = 0;
+	s32 greenMaterialType = 0;
+	s32 yellowMaterialType = 0;
+
 	// instance of shader callback
-	NodeShaderCallBack* shader = new NodeShaderCallBack();
-	shader->setColour(SColorf(1.0f, 0.0f, 0.0f, 0.5f));
+	NodeShaderCallBack* redShader = new NodeShaderCallBack();
+	redShader->setColour(SColorf(1.0f, 0.0f, 0.0f, 0.5f));
+	NodeShaderCallBack* yellowShader = new NodeShaderCallBack();
+	yellowShader->setColour(SColorf(1.0f, 1.0f, 0.0f, 0.5f));
+	NodeShaderCallBack* greenShader = new NodeShaderCallBack();
+	greenShader->setColour(SColorf(0.0f, 1.0f, 0.0f, 0.5f));
 
 	// select shading language as GLSLs
 	const video::E_GPU_SHADING_LANGUAGE shadingLanguage = video::EGSL_DEFAULT;
 
 	// create material from high level shaders (hlsl, glsl or cg)
 
-	newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
+	redMaterialType = gpu->addHighLevelShaderMaterialFromFiles(
 		vsFileName, "vertexMain", video::EVST_VS_1_1,
 		psFileName, "pixelMain", video::EPST_PS_1_1,
-		shader, video::EMT_SOLID, 0, shadingLanguage);
+		redShader, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
 
-	newMaterialType2 = gpu->addHighLevelShaderMaterialFromFiles(
+
+	greenMaterialType = gpu->addHighLevelShaderMaterialFromFiles(
 		vsFileName, "vertexMain", video::EVST_VS_1_1,
 		psFileName, "pixelMain", video::EPST_PS_1_1,
-		shader, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
+		greenShader, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
 
-	shader->drop();
+
+	yellowMaterialType = gpu->addHighLevelShaderMaterialFromFiles(
+		vsFileName, "vertexMain", video::EVST_VS_1_1,
+		psFileName, "pixelMain", video::EPST_PS_1_1,
+		yellowShader, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
+
+	redShader->drop();
+	yellowShader->drop();
+	greenShader->drop();
 
 	// print node info
 	PrintNodes(nodes);
@@ -537,52 +552,48 @@ int main(void) {
 	*/
 	vector<Node*> path = AStarPathAlgorithm(nodes, nodes[input_start], nodes[input_end]);
 
-	cout << "Path Found: Size = " << path.size() << endl;
-	for (int i = 0; i < path.size(); ++i) {
-		cout << "from: " << path[i]->name << endl;
+	// print path
+	cout << "PATH LENGTH = " << path.size() << endl;
+	for (int i = path.size() - 1; i >= 0; --i) {
+		cout << path[i]->name << "->";
 	}
-
-	// buffers for lines between nodes
-	//S3DVertex pVertexBuffer[2];
-	//pVertexBuffer[0] = S3DVertex(vector3df(), vector3df(), SColor(), vector2df());
-	//pVertexBuffer[1] = S3DVertex(vector3df(0, 100, 0), vector3df(), SColor(), vector2df());
-	//
-	//u16 pIndexBuffer[2] = { 0,1 };
+	cout << "END." << endl;
 
 	IVertexBuffer* lineVertexBuffer = new CVertexBuffer(EVT_STANDARD);
 	IIndexBuffer* lineIndexBuffer = new CIndexBuffer(EIT_16BIT);
 	SMaterial lineMaterial = SMaterial();
 	lineMaterial.Thickness = 3;
-
-	// selector
-	scene::ITriangleSelector* selector = 0;
+	lineMaterial.MaterialType = EMT_TRANSPARENT_ALPHA_CHANNEL;
+	lineMaterial.AmbientColor = SColor(255,255,255,255);
 
 	for (u32 i = 0; i < nodes.size(); ++i) {
 		std::string name();
 		scene::ISceneNode* node = smgr->addSphereSceneNode(0.2f, 512,0, IDFlag_IsPickable);
+		node->setMaterialTexture(0, driver->getTexture("./res/portal7.bmp"));
+		node->setMaterialFlag(EMF_BLEND_OPERATION, true);
 		node->setPosition(nodes[i]->position);
 		node->setName(nodes[i]->name.c_str());
 		node->setID(IDFlag_IsPickable);
 		if (i == input_start) {
 			// start node
-			node->setMaterialTexture(0, driver->getTexture("./res/particlered.bmp"));
+			node->setDebugDataVisible(true);
+			node->setMaterialType((E_MATERIAL_TYPE)yellowMaterialType);
 		}
 		else if (i == input_end) {
 			// end node
-			node->setMaterialTexture(0, driver->getTexture("./res/particlegreen.bmp"));
-		} else if (listFind(path, nodes[i]) != -1) {
-			node->setMaterialTexture(0, driver->getTexture("./res/portal7.bmp"));
 			node->setDebugDataVisible(true);
+			node->setMaterialType((E_MATERIAL_TYPE)yellowMaterialType);
+		} else if (listFind(path, nodes[i]) != -1) {
+			node->setMaterialType((E_MATERIAL_TYPE)redMaterialType);
 		}
 		else {
+			node->setMaterialType((E_MATERIAL_TYPE)greenMaterialType);
 			node->setMaterialTexture(0, driver->getTexture("./res/wall.bmp"));
 		}
-		node->setMaterialFlag(video::EMF_LIGHTING, false);
-		node->setMaterialType((video::E_MATERIAL_TYPE)newMaterialType1);
 
 		smgr->addTextSceneNode(gui->getBuiltInFont(),
 			std::to_wstring(i).c_str(),
-			video::SColor(255, 255, 255, 255), node, vector3df(), ID_IsNotPickable);
+			video::SColor(255, 255, 255, 255), node, vector3df(0,0,0.05f), ID_IsNotPickable);
 		
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(255,0, 255,0), vector2df()));
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), nodes[i]->edges[0].to->color, vector2df()));
@@ -601,7 +612,6 @@ int main(void) {
 	// add a nice skybox
 
 	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
-
 	smgr->addSkyBoxSceneNode(
 		driver->getTexture("./res/irrlicht2_up.jpg"),
 		driver->getTexture("./res/irrlicht2_dn.jpg"),
@@ -609,7 +619,6 @@ int main(void) {
 		driver->getTexture("./res/irrlicht2_rt.jpg"),
 		driver->getTexture("./res/irrlicht2_ft.jpg"),
 		driver->getTexture("./res/irrlicht2_bk.jpg"));
-
 	driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, true);
 
 	// add a camera and disable the mouse cursor
@@ -634,6 +643,11 @@ int main(void) {
 		{
 			driver->beginScene(true, true, video::SColor(255, 0, 0, 0));
 
+			// Work out a frame delta time.
+			const u32 now = device->getTimer()->getTime();
+			const f32 frameDeltaTime = (f32)(now - then) / 1000.f; // Time in seconds
+			then = now;
+
 			smgr->drawAll();
 
 			// sine function for displaying the path
@@ -657,12 +671,6 @@ int main(void) {
 				EVT_STANDARD,
 				EPT_LINES,
 				EIT_16BIT);
-
-
-			// Work out a frame delta time.
-			const u32 now = device->getTimer()->getTime();
-			const f32 frameDeltaTime = (f32)(now - then) / 1000.f; // Time in seconds
-			then = now;
 
 			/* Check if keys W, S, A or D are being held down, and move the
 			sphere node around respectively. */
