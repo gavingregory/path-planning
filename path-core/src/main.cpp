@@ -464,10 +464,12 @@ int main(void) {
 	IVideoDriver* driver = device->getVideoDriver();
 	ISceneManager* smgr = device->getSceneManager();
 	IGUIEnvironment* gui = device->getGUIEnvironment();
+	
+	io::path vsFileName; // filename for the vertex shader
+	io::path psFileName; // filename for the pixel shader
+	psFileName = "./res/opengl.frag";
+	vsFileName = "./res/opengl.vert";
 
-	io::path vsFileName = "./res/opengl.frag"; // filename for the vertex shader
-	io::path psFileName = "./res/opengl.vert"; // filename for the fragment shader
-		
 	// create materials
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
 	s32 newMaterialType1 = 0;
@@ -542,7 +544,7 @@ int main(void) {
 
 		smgr->addTextSceneNode(gui->getBuiltInFont(),
 			std::to_wstring(i).c_str(),
-			video::SColor(255, 18, 48, 12), node, vector3df(), ID_IsNotPickable);
+			video::SColor(255, 255, 255, 255), node, vector3df(), ID_IsNotPickable);
 		
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->position, vector3df(), SColor(255,0, 255,0), vector2df()));
 		lineVertexBuffer->push_back(S3DVertex(nodes[i]->edges[0].to->position, vector3df(), nodes[i]->edges[0].to->color, vector2df()));
