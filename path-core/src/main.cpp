@@ -14,6 +14,7 @@ using namespace gui;
 using std::vector;
 using std::string;
 using std::cout;
+using std::cin;
 using std::endl;
 
 #pragma comment(lib, "Irrlicht.lib")
@@ -449,8 +450,17 @@ enum
 	IDFlag_IsPickable = 1 << 0
 };
 
-
 int main(void) {
+
+	s32 input_start = -1;
+	s32 input_end = -1;
+
+	while (input_start < 0 || input_start > 59 || input_end < 0 || input_end > 59) {
+		cout << "Please enter the start node (0-59): ";
+		cin >> input_start;
+		cout << endl << "Please enter the end node (0-59): ";
+		cin >> input_end;
+	}
 
 	// instance of event receiver
 	MyEventReceiver receiver;
@@ -467,8 +477,8 @@ int main(void) {
 	
 	io::path vsFileName; // filename for the vertex shader
 	io::path psFileName; // filename for the pixel shader
-	psFileName = "./res/opengl.frag";
-	vsFileName = "./res/opengl.vert";
+	psFileName = "./res/shader/opengl.frag";
+	vsFileName = "./res/shader/opengl.vert";
 
 	// create materials
 	video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
@@ -492,7 +502,7 @@ int main(void) {
 		vsFileName, "vertexMain", video::EVST_VS_1_1,
 		psFileName, "pixelMain", video::EPST_PS_1_1,
 		mc, video::EMT_TRANSPARENT_ADD_COLOR, 0, shadingLanguage);
-		
+
 	mc->drop();
 
 	vector<Node*> nodes = GenerateNodes();
@@ -504,7 +514,7 @@ int main(void) {
 	* ALGORITHM
 	* HERE
 	*/
-	vector<Node*> path = AStarPathAlgorithm(nodes, nodes[58], nodes[1]);
+	vector<Node*> path = AStarPathAlgorithm(nodes, nodes[input_start], nodes[input_end]);
 
 	cout << "Path Found: Size = " << path.size() << endl;
 	for (int i = 0; i < path.size(); ++i) {
