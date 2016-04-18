@@ -22,6 +22,24 @@ using std::endl;
 IrrlichtDevice* device = 0;
 
 /**
+ * Implementation of A* Algorithm
+ * 
+ * This algorithm finds the shortest route between two nodes.
+ * 
+ * You can make a node impassable and the algorithm will not include that node
+ * in the solution.
+ *
+ * If a path can not be found (i.e. all nodes surrounding the destination node are 
+ * impassable) then the algorithm will return an empty path.
+ *
+ * The path (if found) will be output to the console and also displayed on the 
+ * graphical display. Start and end nodes will be yellow nodes.
+ * The path will be red nodes.
+ *
+ */
+
+
+/**
  * Event receiver
  * receives keyboard and mouse events.
  */
@@ -321,14 +339,23 @@ void PrintNodes(vector<Node*> nodes) {
 	}
 }
 
+/**
+ * Removes the node from the list
+ */
 void listRemove(vector<Node*> &nodes, Node* value) {
 	nodes.erase(std::remove(nodes.begin(), nodes.end(), value), nodes.end());
 }
 
+/**
+ * Adds the node to the list
+ */
 void listAdd(vector<Node*> &nodes, Node* value) {
 	nodes.push_back(value);
 }
 
+/**
+ * Sorts the list
+ */
 void listSort(vector<Node*> &nodes) {
 	struct PointerCompare {
 		bool operator()(const Node* l, const Node* r) {
@@ -338,6 +365,9 @@ void listSort(vector<Node*> &nodes) {
 	std::sort(nodes.begin(), nodes.end(), PointerCompare());
 }
 
+/**
+ * Finds the index of the item in the list. If it is not found, return -1
+ */
 int listFind(vector<Node*> &nodes, Node* value) {
 	vector<Node*>::iterator it = std::find(nodes.begin(), nodes.end(), value);
 	// return -1 if not found
