@@ -36,6 +36,27 @@ IrrlichtDevice* device = 0;
  * graphical display. Start and end nodes will be yellow nodes.
  * The path will be red nodes.
  *
+ * This solution uses the irrlicht engine, and was created in the test environment
+ * produced after completing the irrlicht tutorials.
+ * http://irrlicht.sourceforge.net/docu/example001.html
+ * I basically wanted an engine that was ready to go (and worked in Visual Studio)
+ * as my engine was not in a working state when I completed this assignment. This
+ * allowed visualisation of my algorithm, which helped me debug the algorithm.
+ *
+ * Controls:
+ * Mouse, WSAD and QE to move around.
+ *
+ * Key:
+ * YELLOW: Start and End nodes.
+ * RED: Nodes that are part of the path.
+ * GREEN: All other nodes.
+ *
+ * Instructions:
+ * As per the assignment spec, enter the start and end node ID's into the console,
+ * for example, 1 and 50. 
+ * Then enter the numbers of nodes which you would like to be IMPASSABLE. When you 
+ * have finished (or if you choose none) type -1.
+ * The result will be displayed.
  */
 
 
