@@ -57,6 +57,10 @@ IrrlichtDevice* device = 0;
  * Then enter the numbers of nodes which you would like to be IMPASSABLE. When you 
  * have finished (or if you choose none) type -1.
  * The result will be displayed.
+ *
+ * Note:
+ * git repo has been included which will show how the algorithm was developed!
+ * (if at all interesting).
  */
 
 
